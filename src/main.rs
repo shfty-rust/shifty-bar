@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn left_bar() -> String {
-    Default::default()
+    widget_hostname()
 }
 
 fn center_bar() -> String {
@@ -54,8 +54,30 @@ fn right_bar() -> String {
     widget_clock()
 }
 
+fn widget_hostname() -> String {
+    let hostname = hostname::get()
+        .expect("Failed to get hostname")
+        .into_string()
+        .expect("Failed to convert hostname to String");
+
+    IntoIterator::into_iter([
+        &foreground::<0xFF000000>(),
+        &background::<0xFFFFFFFF>(),
+        " ",
+        &hostname,
+        " ",
+        &foreground::<0xFFFFFFFF>(),
+        &background::<0x00000000>(),
+        LEFT_SEPARATOR,
+        foreground_reset(),
+        background_reset(),
+    ])
+    .collect()
+}
+
 fn widget_clock() -> String {
     let local: DateTime<Local> = Local::now();
+    let naive = local.naive_local();
     IntoIterator::into_iter([
         &foreground::<0xFF000000>(),
         background_reset(),
@@ -63,7 +85,7 @@ fn widget_clock() -> String {
         &foreground::<0xFFFFFFFF>(),
         &background::<0xFF000000>(),
         &padding::<1>(),
-        &local.to_string(),
+        &local.format("%D %H:%M:%S %p").to_string(),
         "  ",
         foreground_reset(),
         background_reset(),
