@@ -4,8 +4,10 @@ version = "0.1.0"
 authors = ["Josh Palmer <jpalmerwatkins@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 chrono = "0.4.19"
 hostname = "0.3.1"
+crossbeam-channel = "0.5.1"
+notify = "5.0.0-pre.13"
+parking_lot = "0.11.2"
+
