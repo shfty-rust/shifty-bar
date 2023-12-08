@@ -9,5 +9,7 @@ chrono = "0.4.19"
 hostname = "0.3.1"
 crossbeam-channel = "0.5.1"
 notify = "5.0.0-pre.13"
-parking_lot = "0.11.2"
+parking_lot = "0.12.0"
+
+workflow = { path = "../workflow" }
 

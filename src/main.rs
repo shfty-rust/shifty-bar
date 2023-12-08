@@ -72,6 +72,7 @@ struct Context<'a> {
     monitor_focused_desktops: MonitorActiveDesktops<'a>,
     focused_monitor: String,
     workspace: String,
+    workspace_icon: Option<String>,
 }
 
 impl<'a> Context<'a> {
@@ -81,6 +82,7 @@ impl<'a> Context<'a> {
         monitor_focused_desktops: MonitorActiveDesktops<'a>,
         focused_monitor: String,
         workspace: S,
+        workspace_icon: Option<String>,
     ) -> Self {
         let monitor_indices = monitors
             .into_iter()
@@ -95,6 +97,7 @@ impl<'a> Context<'a> {
             monitor_focused_desktops,
             focused_monitor,
             workspace,
+            workspace_icon,
         }
     }
 }
@@ -163,6 +166,9 @@ fn bspc_query(args: &str) -> Result<String, Box<dyn Error>> {
 }
 
 fn main() {
+    // Read workspace files
+    let workflows = workflow::Workflows::new("/home/josh/.config/workflow").unwrap();
+
     // Fetch monitor information from xrandr
     let monitors = Command::new("sh")
         .arg("-c")
@@ -274,12 +280,20 @@ fn main() {
         .unwrap();
 
     // Create bar context
+    let workspace = read_workspace();
+    let workspace_icon = if let Some(workflow) = workflows.workflow(&workspace) {
+        workflow.icon.clone()
+    } else {
+        None
+    };
+
     let mut context = Context::new(
         monitors,
         desktops,
         focused_desktops,
         focused_monitor,
-        read_workspace(),
+        workspace,
+        workspace_icon,
     );
 
     // Create a tick receiver to handle continual updates
@@ -292,7 +306,17 @@ fn main() {
             recv(rx_tick) -> _ => (),
             // Received a workspace change event, update context
             recv(rx_workspace) -> workspace => {
-                context.workspace = workspace.unwrap();
+                let workspace = workspace.unwrap();
+
+                let workspace_path = std::fs::read_to_string("/home/josh/.local/state/workspace")
+                    .unwrap()
+                    .replace("\n", "");
+
+                if let Some(workflow) = workflows.workflow(&workspace_path) {
+                    context.workspace_icon = workflow.icon.clone();
+                }
+
+                context.workspace = workspace;
             }
             // Received a desktop focus event, update context
             recv(rx_desktop_focus) -> desktop_focus => {
@@ -528,11 +552,17 @@ fn widget_clock_panel() -> impl Draw {
     )
 }
 
-fn widget_center_bar(context: &mut Context) -> impl Draw {
+fn widget_center_bar(context: &Context) -> impl Draw {
     widget_align_center(widget_angle_center_panel(
         FOREGROUND,
         CURRENT_LINE,
-        cons![char_folder(), context.workspace.clone(),],
+        cons![
+            context
+                .workspace_icon
+                .clone()
+                .unwrap_or(char_folder().to_string()),
+            context.workspace.clone(),
+        ],
     ))
 }
 
